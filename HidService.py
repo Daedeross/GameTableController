@@ -1,7 +1,3 @@
-
-from curses import mouseinterval
-
-
 class HidService:
     #
     _path = '/dev/hidg0'
@@ -26,25 +22,31 @@ class HidService:
     def __init__(self, path = '/dev/hidg0'):
         self._path = path
 
+    def _send(self, report: bytearray):
+        try:
+            with open(self._path, 'rb+') as fd:
+                fd.write(report)
+        except BlockingIOError:
+            return
+
     def pen_report(self, x: int, y: int, in_range: bool, tip=False, barrel=False, eraser=False, invert=False):
-        with open(self._path, 'rb+') as fd:
-            states = 0
-            if(in_range):
-                states = states | self._b_in_range
-            if(barrel):
-                states = states | self._b_barrel
-            if(tip):
-                states = states | self._b_tip
-            if(eraser):
-                states = states | self._b_eraser
-            if(invert):
-                states = states | self._b_invert
-            output = bytearray(10)
-            output[0] = self._pen_report_id
-            output[1:2] = states.to_bytes(1, byteorder='little')
-            output[2:4] = x.to_bytes(2, byteorder='little')
-            output[4:6] = y.to_bytes(2, byteorder='little')
-            fd.write(output)
+        states = 0
+        if(in_range):
+            states = states | self._b_in_range
+        if(barrel):
+            states = states | self._b_barrel
+        if(tip):
+            states = states | self._b_tip
+        if(eraser):
+            states = states | self._b_eraser
+        if(invert):
+            states = states | self._b_invert
+        output = bytearray(10)
+        output[0] = self._pen_report_id
+        output[1:2] = states.to_bytes(1, byteorder='little')
+        output[2:4] = x.to_bytes(2, byteorder='little')
+        output[4:6] = y.to_bytes(2, byteorder='little')
+        self._send(output)
 
     def mouse_report(self, dx: int, dy: int, button0: bool, button1: bool, button2: bool, wheel: int = 0):
         if (dx < -127 or dx > 127):
@@ -54,21 +56,20 @@ class HidService:
         if (wheel < -127 or wheel > 127):
             raise ("Invalid mouse wheel delta")
         
-        with open(self._path, 'rb+') as fd:
-            states = 0
-            if(button0):
-                states |= self._b_button0
-            if(button1):
-                states |= self._b_button1
-            if(button2):
-                states |= self._b_button2
-            output = bytearray(5)
-            output[0] = self._mouse_report_id
-            output[1:2] = states.to_bytes(1, byteorder='little')
-            output[2:3] = dx.to_bytes(1, byteorder='little', signed = True)
-            output[3:4] = dy.to_bytes(1, byteorder='little', signed = True)
-            output[4:5] = wheel.to_bytes(1, byteorder='little', signed = True)
-            fd.write(output)
+        states = 0
+        if(button0):
+            states |= self._b_button0
+        if(button1):
+            states |= self._b_button1
+        if(button2):
+            states |= self._b_button2
+        output = bytearray(5)
+        output[0] = self._mouse_report_id
+        output[1:2] = states.to_bytes(1, byteorder='little')
+        output[2:3] = dx.to_bytes(1, byteorder='little', signed = True)
+        output[3:4] = dy.to_bytes(1, byteorder='little', signed = True)
+        output[4:5] = wheel.to_bytes(1, byteorder='little', signed = True)
+        self._send(output)
 
     def full_report(self, x: int, y: int, in_range: bool, button0: bool, button1: bool, button2: bool, wheel: int = 0):
         self.pen_report(x, y, in_range)

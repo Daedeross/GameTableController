@@ -36,4 +36,25 @@ The RPi connects to the arduino via Bluetooth Low Energy and listens for UART pa
 - Turn on the controller
 - Run the Controller.py script
   - The script will first configure the camera. Click any button on the controller when it is at each of the for corners of the projected screen.
-- Now it will send Pen and Mouse reports via USB to the attached computer that is running the VTT or game.   
+- Now it will send Pen and Mouse reports via USB to the attached computer that is running the VTT or game.
+
+## Future Work
+
+I am trying several things right now, which may or may not bear fruit:
+- Audomatic callibration
+  - There projection is not bright enough on the back-side for the Canny algorithm to find its edges consistently.
+  - Also, I have to remove the IR lowpass-filter for the camera to even see the projection, kinda eliminating the point of automatic callibration. Maybe if I get a camera with a motorized switchable filter.
+- Track AR markers on the base of miniatures.
+  - Several issues with this so far:
+    1. The glass tabletop is 1/4 inch thick and the diffusion film is on the bottom, so things ontop are quite blurred, making it hard for the markers to be detected
+    2. Lighting, Strong IR light will need to be thrown at the back of the screen for the markers to show up.
+       - Possible to create self-illuminated bases, but that sound like an entire project in its own right.
+    3. Would probably have to use a custom VTT, or maybe some kind of API to send the positions to the program. Again, sounds like a big project by itself.
+- C/C++ implementation
+  - Performance is _OK_ on Python, but I'm sure C would be faster.
+  - This will probably reduce processing time currently spent re-allocating memory for and garbage collecting all the numpy arrays.
+  - I am still looking around for a good C/C++ Bluetooth LE library.
+
+## Contributing
+
+Hah, this is for personal use, but feel free to fork or whatever. PRs will probably not be accepted.
