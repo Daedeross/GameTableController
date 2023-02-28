@@ -22,7 +22,7 @@ The RPi connects to the arduino via Bluetooth Low Energy and listens for UART pa
 - Upload the Arduino code to the Hand Controller
 ### Raspberry Pi
 - Enable the USB-HID gadget
-  - This can be done several ways. I don't remember exactly how I set it up to run automatically, but the script that runs is [this one](blob/main/experiment/hid/mycontrol/configfs.sh)
+  - This can be done several ways. I don't remember exactly how I set it up to run automatically, but the script that runs is [this one](experiment/hid/mycontrol/configfs.sh)
 - Install [Adafruit CircuitPython BLE](https://github.com/adafruit/Adafruit_CircuitPython_BLE)
 - Install or compile OpenCV with python bindings.
   - [Instructions](https://qengineering.eu/install-opencv-4.5-on-raspberry-64-os.html) 
