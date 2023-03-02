@@ -70,6 +70,7 @@ sleep 2
 # Enable gadget
 ls /sys/class/udc > UDC
 
+chmod 766 /dev/hidg0
 # sleep 15
 
 echo "Done setting up gadget"

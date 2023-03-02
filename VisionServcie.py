@@ -5,7 +5,6 @@ import cv2
 import numpy as np
 from perpective_transform import four_point_transform as get_transform
 from perpective_transform import order_points
-from skimage.filters import threshold_local
 
 def warp_point(M, x: int or float or tuple, y: int or None = None) -> tuple[int, int]:
     if type(x) == tuple:
@@ -71,7 +70,7 @@ class VisionService:
         self._detector = cv2.SimpleBlobDetector_create(self._blob_params)
         cv2.startWindowThread()
         self._camera.start_preview()
-        self._camera.configure(self._camera.video_configuration(main={"format": 'XRGB8888', "size": size}))#, transform=libcamera.Transform(hflip=1, vflip=0)))
+        self._camera.configure(self._camera.create_video_configuration(main={"format": 'XRGB8888', "size": size}))#, transform=libcamera.Transform(hflip=1, vflip=0)))
         self._camera.start()
     
     def in_bounds(self, x, y):
