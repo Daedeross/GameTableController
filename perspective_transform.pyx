@@ -1,5 +1,7 @@
-# source https://pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/ 
-# import the necessary packages
+
+#// source https://pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/ 
+#// import the necessary packages
+
 import numpy as np
 import cv2
 def order_points(pts):
@@ -25,6 +27,7 @@ def order_points(pts):
 def four_point_transform(image, pts):
     # obtain a consistent order of the points and unpack them
     # individually
+    print(pts)
     rect = order_points(pts)
     (tl, tr, br, bl) = rect
     # compute the width of the new image, which will be the
@@ -51,6 +54,7 @@ def four_point_transform(image, pts):
         [0, maxHeight - 1]], dtype = "float32")
     # compute the perspective transform matrix and then apply it
     M = cv2.getPerspectiveTransform(rect, dst)
+    print(M)
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
     # return the warped image
     return M, (maxWidth, maxHeight), warped

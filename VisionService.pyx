@@ -3,22 +3,14 @@ from BluetoothService import BluetoothService, BleEvent
 from picamera2.picamera2 import Picamera2
 import cv2
 import numpy as np
-from perpective_transform import four_point_transform as get_transform
-from perpective_transform import order_points
+from perspective_transform import four_point_transform as get_transform
 
-def warp_point(M, x: int or float or tuple, y: int or None = None) -> tuple[int, int]:
-    if type(x) == tuple:
-        _x = x[0]
-        _y = x[1]
-    else:
-        _x = x
-        _y = y
-
-    d = M[2, 0] * _x + M[2, 1] * _y + M[2, 2]
+cdef warp_point(M, double x, double y):
+    cdef double d = M[2, 0] * x + M[2, 1] * y + M[2, 2]
 
     return (
-        round((M[0, 0] * _x + M[0, 1] * _y + M[0, 2]) / d), # x
-        round((M[1, 0] * _x + M[1, 1] * _y + M[1, 2]) / d), # y
+        round((M[0, 0] * x + M[0, 1] * y + M[0, 2]) / d), # x
+        round((M[1, 0] * x + M[1, 1] * y + M[1, 2]) / d), # y
     )
 
 def default_blob_params():
@@ -33,14 +25,12 @@ def default_blob_params():
 
     return params
 
-def capture_click(list):
-    list = list
-    #assert(len(list = 4))
+def capture_click(lst):    #assert(len(list = 4))
     #index = 0
     def mouseEvent(event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONUP:
             #list[index] = (x, y)
-            list.append((x, y))
+            lst.append((x, y))
             #index = (index + 1) % 4
     return mouseEvent
 
@@ -76,7 +66,7 @@ class VisionService:
     def in_bounds(self, x, y):
         return x >= 0 and y <= self.size[0] and y >= 0 and y <= self.size[1]
 
-    def get_keypoints(self, image = None) -> list[tuple[int]]:
+    def get_keypoints(self, image = None):
         if image is None:
             im = self._camera.capture_array()
         else:
@@ -85,7 +75,7 @@ class VisionService:
         keypoints = self._detector.detect(gray)
 
         if any(keypoints):
-            points = [warp_point(self._matrix, kp.pt) for kp in keypoints]
+            points = [warp_point(self._matrix, kp.pt[0], kp.pt[1]) for kp in keypoints]
             filtered_points = [(x, y) for (x, y) in points if self.in_bounds(x, y)]
             if (self._show_points):
                 for p in filtered_points:
@@ -96,7 +86,7 @@ class VisionService:
         else:
             return []
 
-    def callibrate(self, points: list[tuple[int]]):
+    def callibrate(self, points):
             
         image: cv2.Mat = self._camera.capture_array()
         for p in points:
@@ -108,7 +98,7 @@ class VisionService:
         M, size, warped = get_transform(image, np.array(points))
         inv_M = np.linalg.inv(M)
         for p in points:
-            warped = cv2.circle(warped, warp_point(M, p), radius=4, color=(0, 255, 0), thickness=2)
+            warped = cv2.circle(warped, warp_point(M, p[0], p[1]), radius=4, color=(0, 255, 0), thickness=2)
         cv2.imshow("Warped", warped)
         sleep(5)
         self._matrix = M
@@ -160,6 +150,8 @@ class VisionService:
             if any(keypoints):
                 current_point = keypoints[0]
                 image = cv2.circle(image, current_point, 4, (0, 255, 0), 2)
+            else:
+                current_point = None
 
             cv2.imshow("Calibrate", image)
         
