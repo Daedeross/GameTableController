@@ -73,18 +73,25 @@ int main(int argc, char *argv[]) {
     setlogmask(LOG_UPTO(LOG_INFO));
 #endif
 
-    m_connection = gattlib_connect(NULL, argv[1],
-                       GATTLIB_CONNECTION_OPTIONS_LEGACY_BDADDR_LE_RANDOM |
-                       GATTLIB_CONNECTION_OPTIONS_LEGACY_BT_SEC_LOW);
+    const char* adapter_name = NULL;
+    void* adapter;
+
+    ret = gattlib_adapter_open(adapter_name, &adapter);
+    if (ret) {
+        printf("Failed to open adapter.\n");
+        return 1;
+    }
+
+    m_connection = gattlib_connect(adapter, argv[1], 0l);
     if (m_connection == NULL) {
-        printf("Fail to connect to the bluetooth device.");
+        printf("Fail to connect to the bluetooth device.\n");
         return 1;
     }
 
     // Convert characteristics to their respective UUIDs
     ret = gattlib_string_to_uuid(NUS_CHARACTERISTIC_TX_UUID, strlen(NUS_CHARACTERISTIC_TX_UUID) + 1, &nus_characteristic_tx_uuid);
     if (ret) {
-        printf("Fail to convert characteristic TX to UUID.");
+        printf("Fail to convert characteristic TX to UUID.\n");
         return 1;
     }
     ret = gattlib_string_to_uuid(NUS_CHARACTERISTIC_RX_UUID, strlen(NUS_CHARACTERISTIC_RX_UUID) + 1, &nus_characteristic_rx_uuid);
