@@ -134,7 +134,7 @@ class VisionService:
     def uart_callibrate(self, ble: BluetoothService):
         self._matrix = np.identity(3)
         self._inv_matrix = np.identity(3)
-        points = []
+        points = set()
         current_point = None
         # save state to return later
         save_size, save_callback = ble.get_callack()
@@ -144,7 +144,7 @@ class VisionService:
             nonlocal current_point
             print("{:08b}".format(packet[0]))
             if (packet[0] & BleEvent.ANY_DOWN) and current_point:
-                points.append(current_point)
+                points.add(current_point)
                 current_point = None
         
         self._show_points = False
