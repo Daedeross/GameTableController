@@ -51,7 +51,7 @@ int curr_rotary = 0;
 int last_rotary = 0;
 
 /// Transit Packet
-/// byte 0 - rotary encoder position
+/// byte 0 - rotary encoder delta (signed byte)
 /// value = pos % NUM_TICKS
 /// byte 1 - buttons and check bit
 const uint8_t BTN_0      = 0b10000000;
@@ -285,9 +285,11 @@ void loop()
   uint8_t packet[PACKET_SIZE];
 
   // read encoder
-  int curr_rotary = ss.getEncoderPosition();
+  curr_rotary = ss.getEncoderPosition();
+  int delta = curr_rotary - last_rotary;
+  int8_t delta_byte = (int8_t)clamp(delta, -127, 127);
 
-  packet[0] = (uint8_t)(curr_rotary % NUM_TICKS);
+  packet[0] = (uint8_t)(delta_byte);
   packet[1] = checkButtons();
 
   if (!(last_packet[0] ^ packet[0] == 0 && last_packet[1] ^ packet[1] == 0) )
@@ -397,4 +399,15 @@ void readButton(d_button & btn, bool is_ss)
   if ((millis() - btn.lastTime) > debounceDelay) {
     btn.state =  reading;
   }
+}
+
+int clamp(int value, int min, int max) {
+  if(value < min) {
+    return min;
+  }
+  else if (value > max) {
+    return max;
+  }
+  return value;
+  
 }

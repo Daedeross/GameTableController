@@ -1,6 +1,24 @@
+class ModifierKeys:
+    RIGHT_META    = 0b10000000
+    RIGHT_ALT     = 0b01000000
+    RIGHT_SHIFT   = 0b00100000
+    RIGHT_CONTROL = 0b00010000
+    LEFT_Meta     = 0b00001000
+    LEFT_ALT      = 0b00000100
+    LEFT_SHIFT    = 0b00000010
+    LEFT_CONTROL  = 0b00000001
+
+    ANY_META    = RIGHT_META | LEFT_Meta
+    ANY_ALT     = RIGHT_ALT | LEFT_ALT
+    ANY_SHIFT   = RIGHT_SHIFT | LEFT_SHIFT
+    ANY_CONTROL = RIGHT_CONTROL | LEFT_CONTROL
+
 class HidService:
     #
     _path = '/dev/hidg0'
+
+    # keyboard
+    _kb_report_id = 0
 
     # mouse
     _mouse_report_id = 2
@@ -55,7 +73,7 @@ class HidService:
             raise ("Invalid mouse y delta", dy)
         if (wheel < -127 or wheel > 127):
             raise ("Invalid mouse wheel delta")
-        
+
         states = 0
         if(button0):
             states |= self._b_button0
@@ -71,6 +89,23 @@ class HidService:
         output[4:5] = wheel.to_bytes(1, byteorder='little', signed = True)
         self._send(output)
 
+    def kb_report(self, modifiers: int, keys: list[int] = []):
+        if len(keys) > 6:
+            keys = keys[0:6]
+        else:
+            while len(keys) < 6:
+                keys.append(0)
+
+        output = bytearray(9)
+        output[0] = self._kb_report_id
+        # byte 0 : modifier
+        output[1:2] = modifiers.to_bytes(1, byteorder='little')
+        # byte 1 : reseverd
+        # bytes 2-7 : key codes
+        output[3:9] = [key.to_bytes(1, byteorder='little') for key in keys]
+        for key in keys:
+            output.append(key.to_bytes(1, byteorder='little'))
+
     def full_report(self, x: int, y: int, in_range: bool, button0: bool, button1: bool, button2: bool, wheel: int = 0):
         self.pen_report(x, y, in_range)
-        self.mouse_report(0, 0, button0, button1, button2)
+        self.mouse_report(0, 0, button0, button1, button2, wheel)

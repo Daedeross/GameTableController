@@ -4,6 +4,7 @@ from enum import Enum
 from BluetoothService import BluetoothService, BleEvent
 from HidService import HidService
 from VisionServcie import VisionService
+from ControllerStateMachine import ControllerStateMachine as StateMachine
 
 from picamera2.picamera2 import *
 import cv2
@@ -15,6 +16,8 @@ class Mode(Enum):
     KEYBOARD = 3
 
 class Controller:
+    _state_machine = StateMachine()
+
     flip_x = True
     flip_y = False
 

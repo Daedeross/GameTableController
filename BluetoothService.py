@@ -18,13 +18,22 @@ class BleEvent:
     ANY_DOWN = B0_DOWN | B1_DOWN | B2_DOWN
     ANY_UP   = B0_UP   | B1_UP   | B2_UP
 
+class BleBtnState:
+    BTN_0      = 0b10000000
+    BTN_1      = 0b01000000
+    ENC_UP     = 0b00100000
+    ENC_LEFT   = 0b00010000
+    ENC_DOWN   = 0b00001000
+    ENC_RIGHT  = 0b00000100
+    ENC_SELECT = 0b00000010
+
 def NoOp():
     pass
 
 class BluetoothService:
     _MAX_RETRIES = 10
 
-    def __init__(self, radio: BLERadio = None):        
+    def __init__(self, radio: BLERadio = None):
         self._radio = radio or BLERadio()
         self._packet_size = 1
         self._packet_callback = NoOp
