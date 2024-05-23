@@ -1,14 +1,15 @@
 import time
 
 from enum import Enum
-from BluetoothService import BluetoothService, BleEvent
-from HidService import HidService
+from BluetoothService import BluetoothService, BleEvent, BleBtnState
+from HidService import HidService, ModifierKeys
 from VisionServcie import VisionService
 from ControllerStateMachine import ControllerStateMachine as StateMachine
 
 from picamera2.picamera2 import *
 import cv2
 import numpy as np
+
 
 class Mode(Enum):
     MOUSE = 1
@@ -46,6 +47,8 @@ class Controller:
             self.button2 = True
         elif packet & BleEvent.B2_UP:
             self.button2 = False
+
+    
 
     def _handle_packet(self, bytes: bytearray):
         self.toggle_buttons(bytes[0])

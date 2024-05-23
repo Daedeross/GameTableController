@@ -6,7 +6,7 @@ import numpy as np
 from perpective_transform import four_point_transform as get_transform
 from perpective_transform import order_points
 
-def warp_point(M, x: int or float or tuple, y: int or None = None) -> tuple[int, int]:
+def warp_point(M, x: int | float | tuple, y: int | None = None) -> tuple[int, int]:
     if type(x) == tuple:
         _x = x[0]
         _y = x[1]
