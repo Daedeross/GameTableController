@@ -7,28 +7,6 @@ from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 from adafruit_ble.services.nordic import UARTService
 
-class BleEvent(IntFlag):
-    B0_DOWN = 0b10000000
-    B0_UP   = 0b01000000
-    B1_DOWN = 0b00100000
-    B1_UP   = 0b00010000
-    B2_DOWN = 0b00001000
-    B2_UP   = 0b00000100
-
-    ANY_DOWN = B0_DOWN | B1_DOWN | B2_DOWN
-    ANY_UP   = B0_UP   | B1_UP   | B2_UP
-
-class BleBtnState(IntFlag):
-    BTN_0      = 0b10000000
-    BTN_1      = 0b01000000
-    ENC_UP     = 0b00100000
-    ENC_LEFT   = 0b00010000
-    ENC_DOWN   = 0b00001000
-    ENC_RIGHT  = 0b00000100
-    ENC_SELECT = 0b00000010
-
-    NONE       = 0b00000000
-
 def NoOp():
     pass
 

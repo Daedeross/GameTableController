@@ -1,4 +1,3 @@
-from typing import Any
 from statemachine import StateMachine, State
 
 class ControllerStateMachine(StateMachine):

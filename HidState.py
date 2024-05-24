@@ -1,5 +1,4 @@
-from BluetoothService import BleBtnState
-from HidService import ModifierKey
+from Enums import ModifierKey, BleBtnState
 
 _default_map = {
     BleBtnState.ENC_UP: 0x52,       # Up Arrow
@@ -36,7 +35,7 @@ class HidState:
         self.modifiers : ModifierKey = 0
         self.keys = set()
 
-    def set_callback(self, mask: BleBtnState | None, callback: function):
+    def set_callback(self, mask: BleBtnState | None, callback):
         if (mask):
             self._callbacks[mask] = callback
         else:

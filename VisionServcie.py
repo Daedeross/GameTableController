@@ -1,5 +1,6 @@
 from time import sleep
-from BluetoothService import BluetoothService, BleEvent
+from BluetoothService import BluetoothService
+from Enums import BleEvent
 from picamera2.picamera2 import Picamera2
 import cv2
 import numpy as np
@@ -96,16 +97,17 @@ class VisionService:
         else:
             return []
 
-    def callibrate(self, points: list[tuple[int]]):
+    def callibrate(self, points: set[tuple[int]]):
             
+        p_list = [p for p in points]
         image: cv2.Mat = self._camera.capture_array()
-        for p in points:
+        for p in p_list:
             image = cv2.circle(image, p, radius=4, color=(0, 0, 255), thickness=2)
 
         cv2.imshow("Calibrate", image)
         sleep(2)
 
-        M, size, warped = get_transform(image, np.array(points))
+        M, size, warped = get_transform(image, np.array(p_list))
         inv_M = np.linalg.inv(M)
         for p in points:
             warped = cv2.circle(warped, warp_point(M, p), radius=4, color=(0, 255, 0), thickness=2)

@@ -1,5 +1,6 @@
 from enum import Enum
-from BluetoothService import BluetoothService, BleEvent, BleBtnState
+from BluetoothService import BluetoothService
+from Enums import BleEvent, BleBtnState
 from HidService import HidService
 from VisionServcie import VisionService
 from HidState import HidState
@@ -39,6 +40,7 @@ class Controller:
         sm.set_enter_callback("connecting", self.on_connecting)
         sm.set_enter_callback("calibrating", self.on_calibrating)
         sm.set_enter_callback("running", self.on_running)
+        return sm
 
     def _request_calibrate(self):
         self.recalibrate = True
@@ -148,6 +150,6 @@ class Controller:
         self._state_machine.send(next)
 
 if __name__ == '__main__':
-    controller = Controller(Mode.PEN, BluetoothService(), VisionService(size = (800, 600)), HidService())
+    controller = Controller(Mode.PEN, BluetoothService(), VisionService(size = (800, 600)), HidService(), version = 2)
     # controller._vision._show_points = True
     controller.run()

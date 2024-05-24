@@ -1,22 +1,7 @@
 from enum import IntFlag
 
+from Enums import ModifierKey
 from HidState import HidState
-
-class ModifierKey (IntFlag):
-    RIGHT_META    = 0b10000000
-    RIGHT_ALT     = 0b01000000
-    RIGHT_SHIFT   = 0b00100000
-    RIGHT_CONTROL = 0b00010000
-    LEFT_META     = 0b00001000
-    LEFT_ALT      = 0b00000100
-    LEFT_SHIFT    = 0b00000010
-    LEFT_CONTROL  = 0b00000001
-
-    NONE        = 0
-    ANY_META    = RIGHT_META | LEFT_META
-    ANY_ALT     = RIGHT_ALT | LEFT_ALT
-    ANY_SHIFT   = RIGHT_SHIFT | LEFT_SHIFT
-    ANY_CONTROL = RIGHT_CONTROL | LEFT_CONTROL
 
 class HidService:
     # file path for reports
@@ -94,7 +79,8 @@ class HidService:
         output[4:5] = wheel.to_bytes(1, byteorder='little', signed = True)
         self._send(output)
 
-    def kb_report(self, modifiers: ModifierKey, keys: list[int] = []):
+    def kb_report(self, modifiers: ModifierKey, keys_set: set[int] = []):
+        keys = [k for k in keys_set]
         if len(keys) > 6:
             keys = keys[0:6]
         else:
@@ -107,9 +93,10 @@ class HidService:
         output[1:2] = modifiers.to_bytes(1, byteorder='little')
         # byte 1 : reseverd
         # bytes 2-7 : key codes
-        output[3:9] = [key.to_bytes(1, byteorder='little') for key in keys]
-        for key in keys:
-            output.append(key.to_bytes(1, byteorder='little'))
+        for i in range(0, 6):
+            output[i+3:i+4] = keys[i].to_bytes(1, byteorder='little')
+        # for key in keys:
+        #     output.append(key.to_bytes(1, byteorder='little'))
 
     def full_report(self, state: HidState):
         self.pen_report(state.x, state.y, state.in_range)
