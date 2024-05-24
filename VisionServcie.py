@@ -160,9 +160,11 @@ class VisionService:
             if any(keypoints):
                 current_point = keypoints[0]
                 image = cv2.circle(image, current_point, 4, (0, 255, 0), 2)
+            else:
+                current_point = None
 
             cv2.imshow("Calibrate", image)
-        
+
         # restore state
         ble.set_callback(save_size, save_callback)
         self._show_points = save_show_keypoints
