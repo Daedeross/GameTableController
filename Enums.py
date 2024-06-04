@@ -1,0 +1,39 @@
+from enum import IntFlag
+
+class ModifierKey (IntFlag):
+    RIGHT_META    = 0b10000000
+    RIGHT_ALT     = 0b01000000
+    RIGHT_SHIFT   = 0b00100000
+    RIGHT_CONTROL = 0b00010000
+    LEFT_META     = 0b00001000
+    LEFT_ALT      = 0b00000100
+    LEFT_SHIFT    = 0b00000010
+    LEFT_CONTROL  = 0b00000001
+
+    NONE        = 0
+    ANY_META    = RIGHT_META | LEFT_META
+    ANY_ALT     = RIGHT_ALT | LEFT_ALT
+    ANY_SHIFT   = RIGHT_SHIFT | LEFT_SHIFT
+    ANY_CONTROL = RIGHT_CONTROL | LEFT_CONTROL
+
+class BleEvent(IntFlag):
+    B0_DOWN = 0b10000000
+    B0_UP   = 0b01000000
+    B1_DOWN = 0b00100000
+    B1_UP   = 0b00010000
+    B2_DOWN = 0b00001000
+    B2_UP   = 0b00000100
+
+    ANY_DOWN = B0_DOWN | B1_DOWN | B2_DOWN
+    ANY_UP   = B0_UP   | B1_UP   | B2_UP
+
+class BleBtnState(IntFlag):
+    BTN_0      = 0b10000000
+    BTN_1      = 0b01000000
+    ENC_UP     = 0b00100000
+    ENC_LEFT   = 0b00010000
+    ENC_DOWN   = 0b00001000
+    ENC_RIGHT  = 0b00000100
+    ENC_SELECT = 0b00000010
+
+    NONE       = 0b00000000

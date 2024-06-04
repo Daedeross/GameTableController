@@ -1,5 +1,5 @@
 from ctypes import ArgumentError
-from enum import Enum
+from enum import IntFlag
 import time
 from tkinter import N
 
@@ -7,26 +7,15 @@ from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 from adafruit_ble.services.nordic import UARTService
 
-class BleEvent:
-    B0_DOWN = 0b10000000
-    B0_UP   = 0b01000000
-    B1_DOWN = 0b00100000
-    B1_UP   = 0b00010000
-    B2_DOWN = 0b00001000
-    B2_UP   = 0b00000100
-
-    ANY_DOWN = B0_DOWN | B1_DOWN | B2_DOWN
-    ANY_UP   = B0_UP   | B1_UP   | B2_UP
-
 def NoOp():
     pass
 
 class BluetoothService:
     _MAX_RETRIES = 10
 
-    def __init__(self, radio: BLERadio = None):        
+    def __init__(self, packet_size = 2, radio: BLERadio = None):
         self._radio = radio or BLERadio()
-        self._packet_size = 1
+        self._packet_size = packet_size
         self._packet_callback = NoOp
 
     def _get_uart_connection(self, name = None):

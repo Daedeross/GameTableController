@@ -1,6 +1,14 @@
+from enum import IntFlag
+
+from Enums import ModifierKey
+from HidState import HidState
+
 class HidService:
-    #
+    # file path for reports
     _path = '/dev/hidg0'
+
+    # keyboard
+    _kb_report_id = 0
 
     # mouse
     _mouse_report_id = 2
@@ -55,7 +63,7 @@ class HidService:
             raise ("Invalid mouse y delta", dy)
         if (wheel < -127 or wheel > 127):
             raise ("Invalid mouse wheel delta")
-        
+
         states = 0
         if(button0):
             states |= self._b_button0
@@ -71,6 +79,26 @@ class HidService:
         output[4:5] = wheel.to_bytes(1, byteorder='little', signed = True)
         self._send(output)
 
-    def full_report(self, x: int, y: int, in_range: bool, button0: bool, button1: bool, button2: bool, wheel: int = 0):
-        self.pen_report(x, y, in_range)
-        self.mouse_report(0, 0, button0, button1, button2)
+    def kb_report(self, modifiers: ModifierKey, keys_set: set[int] = []):
+        keys = [k for k in keys_set]
+        if len(keys) > 6:
+            keys = keys[0:6]
+        else:
+            while len(keys) < 6:
+                keys.append(0)
+
+        output = bytearray(9)
+        output[0] = self._kb_report_id
+        # byte 0 : modifier
+        output[1:2] = modifiers.to_bytes(1, byteorder='little')
+        # byte 1 : reseverd
+        # bytes 2-7 : key codes
+        for i in range(0, 6):
+            output[i+3:i+4] = keys[i].to_bytes(1, byteorder='little')
+        # for key in keys:
+        #     output.append(key.to_bytes(1, byteorder='little'))
+
+    def full_report(self, state: HidState):
+        self.pen_report(state.x, state.y, state.in_range)
+        self.mouse_report(0, 0, state.mouse0, state.mouse1, state.mouse2, state.wheel_delta)
+        self.kb_report(ModifierKey.NONE, state.keys)

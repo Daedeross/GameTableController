@@ -1,12 +1,13 @@
 from time import sleep
-from BluetoothService import BluetoothService, BleEvent
+from BluetoothService import BluetoothService
+from Enums import BleEvent
 from picamera2.picamera2 import Picamera2
 import cv2
 import numpy as np
 from perpective_transform import four_point_transform as get_transform
 from perpective_transform import order_points
 
-def warp_point(M, x: int or float or tuple, y: int or None = None) -> tuple[int, int]:
+def warp_point(M, x: int | float | tuple, y: int | None = None) -> tuple[int, int]:
     if type(x) == tuple:
         _x = x[0]
         _y = x[1]
@@ -96,16 +97,17 @@ class VisionService:
         else:
             return []
 
-    def callibrate(self, points: list[tuple[int]]):
+    def callibrate(self, points: set[tuple[int]]):
             
+        p_list = [p for p in points]
         image: cv2.Mat = self._camera.capture_array()
-        for p in points:
+        for p in p_list:
             image = cv2.circle(image, p, radius=4, color=(0, 0, 255), thickness=2)
 
         cv2.imshow("Calibrate", image)
         sleep(2)
 
-        M, size, warped = get_transform(image, np.array(points))
+        M, size, warped = get_transform(image, np.array(p_list))
         inv_M = np.linalg.inv(M)
         for p in points:
             warped = cv2.circle(warped, warp_point(M, p), radius=4, color=(0, 255, 0), thickness=2)
@@ -134,7 +136,7 @@ class VisionService:
     def uart_callibrate(self, ble: BluetoothService):
         self._matrix = np.identity(3)
         self._inv_matrix = np.identity(3)
-        points = []
+        points = set()
         current_point = None
         # save state to return later
         save_size, save_callback = ble.get_callack()
@@ -144,7 +146,7 @@ class VisionService:
             nonlocal current_point
             print("{:08b}".format(packet[0]))
             if (packet[0] & BleEvent.ANY_DOWN) and current_point:
-                points.append(current_point)
+                points.add(current_point)
                 current_point = None
         
         self._show_points = False
@@ -160,9 +162,11 @@ class VisionService:
             if any(keypoints):
                 current_point = keypoints[0]
                 image = cv2.circle(image, current_point, 4, (0, 255, 0), 2)
+            else:
+                current_point = None
 
             cv2.imshow("Calibrate", image)
-        
+
         # restore state
         ble.set_callback(save_size, save_callback)
         self._show_points = save_show_keypoints
