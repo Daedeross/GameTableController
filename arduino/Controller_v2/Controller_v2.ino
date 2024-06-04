@@ -124,18 +124,17 @@ unsigned long debounceDelay = 10; // in ms
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(19200);
 
-#if CFG_DEBUG
+// #if CFG_DEBUG
   // Blocking wait for connection when debug mode is enabled via IDE
   while ( !Serial ) yield();
-#endif
-
-  setupPins();
+// #endif
   
   Serial.println("Game Table Controller");
   Serial.println("---------------------------\n");
 
+  setupPins();
   setupDisplay();
   setupEncoder();
   setupBLE();
@@ -152,16 +151,14 @@ void setupPins(void)
   // Set pins 2 & 23 to ground
   pinMode(2, OUTPUT);
   pinMode(23, OUTPUT);
-  digitalWrite(2, LOW);
-  digitalWrite(23, LOW);
 
   // setup button inputs
   pinMode(PIN_A3, INPUT_PULLUP);
   pinMode(PIN_A4, INPUT_PULLUP);
 
-  // set Laser voltage supply
-  pinMode(PIN_A2, OUTPUT);
-  digitalWrite(PIN_A2, HIGH);
+  digitalWrite(2, LOW);
+  digitalWrite(23, LOW);
+  Serial.println("Pin Setup Complete.");
 }
 
 void setupEncoder(void)
@@ -286,10 +283,13 @@ void loop()
 
   // read encoder
   int curr_rotary = ss.getEncoderPosition();
+  // if(curr_rotary != last_rotary) {
+  //   Serial.println(curr_rotary);
+  // }
 
   packet[0] = (uint8_t)(curr_rotary % NUM_TICKS);
   packet[1] = checkButtons();
-
+  
   if (!(last_packet[0] ^ packet[0] == 0 && last_packet[1] ^ packet[1] == 0) )
   {
     bleuart.write( packet, PACKET_SIZE );
@@ -305,6 +305,7 @@ void loop()
 
   last_packet[0] = packet[0];
   last_packet[1] = packet[1];
+  last_rotary = curr_rotary;
 }
 
 void drawStatus(void) {
@@ -332,18 +333,20 @@ uint8_t checkButtons(void)
   uint8_t packet = 0;
 
   for (int i = 0; i < STD_BTN_COUNT; i++) {
-    readButton(buttons[i], false);
+    readButton(&buttons[i], false);
     if (buttons[i].state == LOW) {
       packet |= buttons[i].mask;
     }
   }
   
   for (int i = 0; i < SS_BTN_COUNT; i++) {
-    readButton(ss_buttons[i], true);
+    readButton(&ss_buttons[i], true);
     if (ss_buttons[i].state == LOW) {
       packet |= ss_buttons[i].mask;
     }
   }
+
+  // Serial.println(packet);
 
   return packet;
 }
@@ -377,24 +380,27 @@ void disconnect_callback(uint16_t conn_handle, uint8_t reason)
 
 // debounce input
 // returns the current state after debounce
-void readButton(d_button & btn, bool is_ss)
+void readButton(d_button *btn, bool is_ss)
 {
   int reading;
   if (is_ss) { // read from seesaw lib 
-    int reading = ss.digitalRead(btn.pin) ? LOW : HIGH;
+    reading = ss.digitalRead(btn->pin) ? HIGH : LOW;
   } else {
-    int reading = digitalRead(btn.pin);
+    reading = digitalRead(btn->pin);
   }
 
   // If the switch changed, due to noise or pressing:
-  if (reading != btn.lastState) {
+  if (reading != btn->lastState) {
     // reset the debouncing timer
-    btn.lastTime = millis();
+    btn->lastTime = millis();
   }
   
-  btn.lastState = reading;
+  btn->lastState = reading;
 
-  if ((millis() - btn.lastTime) > debounceDelay) {
-    btn.state =  reading;
+  if ((millis() - btn->lastTime) > debounceDelay) {
+    // if the button state has changed:
+    if (reading != btn->state) {
+      btn->state = reading;
+    }
   }
 }
