@@ -7,6 +7,9 @@ from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 from adafruit_ble.services.nordic import UARTService
 
+STX = chr(0x02)
+ETX = chr(0x03)
+
 def NoOp():
     pass
 
@@ -68,3 +71,11 @@ class BluetoothService:
             buf = self._uart.read(self._packet_size)
             if self._packet_callback:
                 self._packet_callback(buf)
+
+    def write_uart(self, bytes: bytearray):
+        self._uart.write(bytes)
+
+    def send_text(self, text: str):
+        buf =  (STX + text + ETX).encode("utf-8")
+
+        self.write_uart(buf)

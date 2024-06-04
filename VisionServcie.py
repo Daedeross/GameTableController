@@ -139,6 +139,7 @@ class VisionService:
         points = set()
         current_point = None
         # save state to return later
+        ble.send_text("Calibrating...")
         save_size, save_callback = ble.get_callack()
         save_show_keypoints = self._show_points
 
