@@ -15,7 +15,7 @@ b_tip = 1
 b_eraser = 1 << 3
 b_invert = 1 << 2
 
-def report(x, y, in_range, barrel=False, tip=False, eraser=False, invert=False):
+def report(x: int, y: int, in_range: bool, barrel=False, tip=False, eraser=False, invert=False):
     with open(path, 'rb+') as fd:
         states = 0
         if(in_range):

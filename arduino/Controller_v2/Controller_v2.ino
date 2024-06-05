@@ -32,7 +32,6 @@
 
 #define SEESAW_ADDR      0x49
 
-
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
@@ -295,11 +294,15 @@ void loop()
   }
   
   // Forward from BLEUART to HW Serial
-  while ( bleuart.available() )
-  {
-    uint8_t ch;
-    ch = (uint8_t) bleuart.read();
-    Serial.write(ch);
+  if (blueart.available()) {
+    canvas.fillScreen(0);
+    canvas.setCursor(0,0);
+    while ( bleuart.available() )
+    {
+      uint8_t ch;
+      ch = (uint8_t) bleuart.read();
+      canvas.write(ch);
+    }
   }
 
   last_packet[0] = packet[0];
@@ -323,6 +326,16 @@ void drawStatus(void) {
     canvas.width(), canvas.height(), SSD1306_WHITE, SSD1306_BLACK);
   display.display();
   delay(2000);
+}
+
+void drawText(char* str) {
+  canvas.fillScreen(0);
+
+  canvas.setTextSize(1);              // Normal 1:1 pixel scale
+  canvas.setTextColor(SSD1306_WHITE); // Draw white text
+  canvas.setCursor(0,0);              // Start at top-left corner
+
+  canvas.print(str);
 }
 
 uint8_t checkButtons(void)
@@ -411,6 +424,5 @@ int clamp(int value, int min, int max) {
   else if (value > max) {
     return max;
   }
-  return value;
-  
+  return value;  
 }
