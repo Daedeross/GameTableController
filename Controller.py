@@ -1,5 +1,5 @@
 from enum import Enum
-from BluetoothService import BluetoothService
+from BluetoothService import BluetoothService, BleDisconnectException
 from Enums import BleEvent, BleBtnState
 from HidService import HidService
 from VisionServcie import VisionService
@@ -141,18 +141,24 @@ class Controller:
         self._state_machine.calibrate()
 
     def on_calibrating(self):
-        self.recalibrate = False
-        self._bluetooth.send_text("Calibrating...")
-        self._vision.uart_callibrate(self._bluetooth)
-        self._state_machine.loop()
+        try:
+            self.recalibrate = False
+            self._bluetooth.send_text("Calibrating...")
+            self._vision.uart_callibrate(self._bluetooth)
+            self._state_machine.loop()
+        except BleDisconnectException:
+            self._state_machine.scan()
 
     def on_running(self):
         next = None
-        self._bluetooth.send_text("Running...")
-        while not next:
-            next = self._loop()
+        try:
+            self._bluetooth.send_text("Running...")
+            while not next:
+                next = self._loop()
 
-        self._state_machine.send(next)
+            self._state_machine.send(next)
+        except BleDisconnectException:
+            self._state_machine.scan()
 
 if __name__ == '__main__':
     controller = Controller(Mode.PEN, BluetoothService(), VisionService(version = 2, size = (800, 600)), HidService(), version = 2)

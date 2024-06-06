@@ -166,7 +166,8 @@ class VisionService:
             ble.set_callback(2, callback2)
         else:
             ble.set_callback(1, callback)
-        ble.ensure_ready()
+
+        # Loop until user inputs 4 points
         while len(points) < 4:
             ble.read_uart()
             image = self._camera.capture_array()

@@ -13,6 +13,9 @@ ETX = chr(0x03)
 def NoOp():
     pass
 
+class BleDisconnectException(Exception):
+    pass
+
 class BluetoothService:
     _MAX_RETRIES = 10
 
@@ -20,6 +23,7 @@ class BluetoothService:
         self._radio = radio or BLERadio()
         self._packet_size = packet_size
         self._packet_callback = NoOp
+        self._disconnect_callback = NoOp
 
     def _get_uart_connection(self, name = None):
         self._connection = None
@@ -45,6 +49,12 @@ class BluetoothService:
                 break
         self._radio.stop_scan()
 
+    def set_disconnect_callback(self, callback):
+        if callable == None:
+            self._on_disconnect = NoOp
+        else:
+            self._on_disconnect = callback
+
     def set_callback(self, packet_size: int, callback):
         if packet_size != None and packet_size < 1:
             raise ArgumentError(packet_size)
@@ -67,16 +77,27 @@ class BluetoothService:
             self._get_uart_connection()
 
     def read_uart(self):
-        while self._uart.in_waiting >= self._packet_size:
-            buf = self._uart.read(self._packet_size)
-            print("UART in")
-            if self._packet_callback:
-                self._packet_callback(buf)
+        if self.connected():
+            while self._uart.in_waiting >= self._packet_size:
+                buf = self._uart.read(self._packet_size)
+                print("UART in")
+                if self._packet_callback:
+                    self._packet_callback(buf)
+        else:
+            if (self._disconnect_callback):
+                self._disconnect_callback()
+            else:
+                raise BleDisconnectException()
 
     def write_uart(self, bytes: bytearray):
-        self._uart.write(bytes)
+        if self.connected():
+            self._uart.write(bytes)
+        else:
+            if (self._disconnect_callback):
+                self._disconnect_callback()
+            else:
+                raise BleDisconnectException()
 
     def send_text(self, text: str):
         buf =  (STX + text + ETX).encode("utf-8")
-
         self.write_uart(buf)
