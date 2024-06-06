@@ -29,6 +29,8 @@ class Controller:
         self._vision = vision
         self._hid = hid
         self._hid_state = HidState()
+        self.flip_x = False
+        self.flip_y = True
         self._bluetooth.set_callback(1 if version == 1 else 2, self._handle_packet)
         self._state_machine = self.__wire_state_machine()
         self.__version = version
@@ -42,7 +44,7 @@ class Controller:
         sm.set_enter_callback("running", self.on_running)
         return sm
 
-    def _request_calibrate(self):
+    def _request_calibrate(self, state):
         self.recalibrate = True
 
     def _toggle_buttons(self, packet):
@@ -139,17 +141,20 @@ class Controller:
         self._state_machine.calibrate()
 
     def on_calibrating(self):
+        self.recalibrate = False
+        self._bluetooth.send_text("Calibrating...")
         self._vision.uart_callibrate(self._bluetooth)
         self._state_machine.loop()
 
     def on_running(self):
         next = None
+        self._bluetooth.send_text("Running...")
         while not next:
             next = self._loop()
 
         self._state_machine.send(next)
 
 if __name__ == '__main__':
-    controller = Controller(Mode.PEN, BluetoothService(), VisionService(size = (800, 600)), HidService(), version = 2)
+    controller = Controller(Mode.PEN, BluetoothService(), VisionService(version = 2, size = (800, 600)), HidService(), version = 2)
     # controller._vision._show_points = True
     controller.run()

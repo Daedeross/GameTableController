@@ -102,3 +102,4 @@ class HidService:
         self.pen_report(state.x, state.y, state.in_range)
         self.mouse_report(0, 0, state.mouse0, state.mouse1, state.mouse2, state.wheel_delta)
         self.kb_report(ModifierKey.NONE, state.keys)
+        state.wheel_delta = 0 # reset delta

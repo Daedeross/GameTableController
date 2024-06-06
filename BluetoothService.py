@@ -69,6 +69,7 @@ class BluetoothService:
     def read_uart(self):
         while self._uart.in_waiting >= self._packet_size:
             buf = self._uart.read(self._packet_size)
+            print("UART in")
             if self._packet_callback:
                 self._packet_callback(buf)
 

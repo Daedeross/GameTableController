@@ -56,8 +56,9 @@ class VisionService:
     _matrix = np.identity(3)
     _inv_matrix = _matrix
 
-    def __init__(self, blob_params: cv2.SimpleBlobDetector_Params = None, camera: Picamera2 = None, size = (800, 600)):
+    def __init__(self, version = 1, blob_params: cv2.SimpleBlobDetector_Params = None, camera: Picamera2 = None, size = (800, 600)):
         self.size = size
+        self.version = version
         if camera:
             self._camera = camera
         else:
@@ -138,8 +139,9 @@ class VisionService:
         self._inv_matrix = np.identity(3)
         points = set()
         current_point = None
+        version = self.version
+        last_state = 0x00
         # save state to return later
-        ble.send_text("Calibrating...")
         save_size, save_callback = ble.get_callack()
         save_show_keypoints = self._show_points
 
@@ -149,9 +151,21 @@ class VisionService:
             if (packet[0] & BleEvent.ANY_DOWN) and current_point:
                 points.add(current_point)
                 current_point = None
+
+        def callback2(packet: bytearray):
+            nonlocal current_point
+            nonlocal last_state
+            print("{:08b}|{:08b}".format(packet[0], packet[1]))
+            if (packet[1] and packet[1] != last_state) and current_point:
+                points.add(current_point)
+                current_point = None
+            last_state = packet[1]
         
         self._show_points = False
-        ble.set_callback(1, callback)
+        if(version == 2):
+            ble.set_callback(2, callback2)
+        else:
+            ble.set_callback(1, callback)
         ble.ensure_ready()
         while len(points) < 4:
             ble.read_uart()
