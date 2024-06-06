@@ -35,6 +35,9 @@
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
+#define STX 0x02
+#define ETX 0x03
+
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 // The pins for I2C are defined by the Wire-library. 
 // On an arduino UNO:       A4(SDA), A5(SCL)
@@ -65,25 +68,27 @@ const uint8_t PARITY_BIT = 0b00000001;
 struct d_button {
   uint8_t pin;
   uint8_t mask;
-  int state;
-  int lastState;
+  bool state;
+  bool lastState;
   uint32_t lastTime;
 };
+
+int conn_status = 0;
 
 #define STD_BTN_COUNT 2
 #define SS_BTN_COUNT 5
 
 d_button buttons[STD_BTN_COUNT] = {
-  { .pin = PIN_A3, .mask = BTN_0, .state=HIGH, .lastState=HIGH, .lastTime=0},
-  { .pin = PIN_A4, .mask = BTN_1, .state=HIGH, .lastState=HIGH, .lastTime=0}
+  { .pin = PIN_A4, .mask = BTN_0, .state=HIGH, .lastState=false, .lastTime=0},
+  { .pin = PIN_A3, .mask = BTN_1, .state=HIGH, .lastState=false, .lastTime=0}
 };
 
 d_button ss_buttons[SS_BTN_COUNT] = {
-  { .pin = SS_SWITCH_UP    , .mask = ENC_UP    , .state=HIGH, .lastState=HIGH, .lastTime=0 },
-  { .pin = SS_SWITCH_LEFT  , .mask = ENC_LEFT  , .state=HIGH, .lastState=HIGH, .lastTime=0 },
-  { .pin = SS_SWITCH_DOWN  , .mask = ENC_DOWN  , .state=HIGH, .lastState=HIGH, .lastTime=0 },
-  { .pin = SS_SWITCH_RIGHT , .mask = ENC_RIGHT , .state=HIGH, .lastState=HIGH, .lastTime=0 },
-  { .pin = SS_SWITCH_SELECT, .mask = ENC_SELECT, .state=HIGH, .lastState=HIGH, .lastTime=0 }
+  { .pin = SS_SWITCH_UP    , .mask = ENC_UP    , .state=HIGH, .lastState=false, .lastTime=0 },
+  { .pin = SS_SWITCH_LEFT  , .mask = ENC_LEFT  , .state=HIGH, .lastState=false, .lastTime=0 },
+  { .pin = SS_SWITCH_DOWN  , .mask = ENC_DOWN  , .state=HIGH, .lastState=false, .lastTime=0 },
+  { .pin = SS_SWITCH_RIGHT , .mask = ENC_RIGHT , .state=HIGH, .lastState=false, .lastTime=0 },
+  { .pin = SS_SWITCH_SELECT, .mask = ENC_SELECT, .state=HIGH, .lastState=false, .lastTime=0 }
 };
 
 GFXcanvas1 canvas(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -123,17 +128,18 @@ unsigned long debounceDelay = 10; // in ms
 
 void setup()
 {
-  Serial.begin(19200);
+  Serial.begin(115200);
 
-// #if CFG_DEBUG
+#if CFG_DEBUG
   // Blocking wait for connection when debug mode is enabled via IDE
   while ( !Serial ) yield();
-// #endif
+#endif
   
   Serial.println("Game Table Controller");
   Serial.println("---------------------------\n");
 
   setupPins();
+  delay(1000);
   setupDisplay();
   setupEncoder();
   setupBLE();
@@ -203,8 +209,6 @@ void setupDisplay() {
     Serial.println(F("SSD1306 allocation success"));
   }
 
-  delay(100);
-
   // Show initial display buffer contents on the screen --
   // the library initializes this with an Adafruit splash screen.
   // display.setRotation(2);
@@ -212,7 +216,6 @@ void setupDisplay() {
   delay(2000); // Pause for 2 seconds
 
   canvas.setTextWrap(false);
-  drawStatus();
 }
 
 void setupBLE() {  
@@ -237,7 +240,7 @@ void setupBLE() {
 
   // Configure and Start Device Information Service
   bledis.setManufacturer("Adafruit Industries");
-  bledis.setModel("Bluefruit Feather52");
+  bledis.setModel("Adafruit ItsyBitsy nRF52840 Express");
   bledis.begin();
 
   // Configure and Start BLE Uart Service
@@ -274,6 +277,8 @@ void startAdv(void)
   Bluefruit.Advertising.setInterval(32, 244);    // in unit of 0.625 ms
   Bluefruit.Advertising.setFastTimeout(30);      // number of seconds in fast mode
   Bluefruit.Advertising.start(0);                // 0 = Don't stop advertising after n seconds  
+  
+  drawStatus();
 }
 
 void loop()
@@ -288,43 +293,65 @@ void loop()
   packet[0] = (uint8_t)(delta_byte);
   packet[1] = checkButtons();
   
-  if (!(last_packet[0] ^ packet[0] == 0 && last_packet[1] ^ packet[1] == 0) )
+  if (!(packet[0] == 0 && last_packet[1] == packet[1]) )
   {
+    Serial.print("PACKET: ");
+    Serial.print(packet[0], BIN);
+    Serial.print(" | ");
+    Serial.println(packet[1], BIN);
     bleuart.write( packet, PACKET_SIZE );
   }
   
   // Forward from BLEUART to HW Serial
-  if (blueart.available()) {
-    canvas.fillScreen(0);
-    canvas.setCursor(0,0);
-    while ( bleuart.available() )
-    {
-      uint8_t ch;
-      ch = (uint8_t) bleuart.read();
+  while ( bleuart.available() )
+  {
+    uint8_t ch;
+    ch = (uint8_t) bleuart.read();
+    if (ch == STX) {
+      restartText();
+      printStatus(); 
+      Serial.println("STX");
+    } else if (ch == ETX) {
+      flushText();
+      Serial.println("ETX");
+    } else {
       canvas.write(ch);
     }
+    Serial.write(ch);
   }
 
   last_packet[0] = packet[0];
   last_packet[1] = packet[1];
   last_rotary = curr_rotary;
+
+  delay(10);
 }
 
-void drawStatus(void) {
-  //display.clearDisplay();
+void restartText() {
   canvas.fillScreen(0);
-
   canvas.setTextSize(1);              // Normal 1:1 pixel scale
   canvas.setTextColor(SSD1306_WHITE); // Draw white text
   canvas.setCursor(0,0);              // Start at top-left corner
-  canvas.println(F("1) Hello, world!"));
-  canvas.println(F("2) Hello, world!"));
-  canvas.println(F("3) Hello, world!"));
-  canvas.println(F("4) Hello, world!"));
-  canvas.println(F("5) Hello, world!"));
+}
+
+void flushText() {
   display.drawBitmap(0, 0, canvas.getBuffer(),
     canvas.width(), canvas.height(), SSD1306_WHITE, SSD1306_BLACK);
   display.display();
+}
+
+void printStatus() {
+  if (conn_status) {
+    canvas.println(F("- Connected -"));
+  } else {
+    canvas.println(F("- Disconnected -"));
+  }
+}
+
+void drawStatus(void) {
+  restartText();
+  printStatus();
+  flushText();
   delay(2000);
 }
 
@@ -342,18 +369,18 @@ uint8_t checkButtons(void)
 {
   // check for button states
   // and assemble packet
-  uint8_t packet = 0;
+  uint8_t packet = 0x00;
 
   for (int i = 0; i < STD_BTN_COUNT; i++) {
     readButton(&buttons[i], false);
-    if (buttons[i].state == LOW) {
+    if (buttons[i].state) {
       packet |= buttons[i].mask;
     }
   }
   
   for (int i = 0; i < SS_BTN_COUNT; i++) {
     readButton(&ss_buttons[i], true);
-    if (ss_buttons[i].state == LOW) {
+    if (ss_buttons[i].state) {
       packet |= ss_buttons[i].mask;
     }
   }
@@ -374,6 +401,8 @@ void connect_callback(uint16_t conn_handle)
 
   Serial.print("Connected to ");
   Serial.println(central_name);
+  conn_status = 1;
+  drawStatus();
 }
 
 /**
@@ -388,17 +417,21 @@ void disconnect_callback(uint16_t conn_handle, uint8_t reason)
 
   Serial.println();
   Serial.print("Disconnected, reason = 0x"); Serial.println(reason, HEX);
+  conn_status = 0;
+  drawStatus();
+  delay(1000);
+  startAdv();
 }
 
 // debounce input
 // returns the current state after debounce
 void readButton(d_button *btn, bool is_ss)
 {
-  int reading;
+  bool reading;
   if (is_ss) { // read from seesaw lib 
-    reading = ss.digitalRead(btn->pin) ? HIGH : LOW;
+    reading = !ss.digitalRead(btn->pin);
   } else {
-    reading = digitalRead(btn->pin);
+    reading = digitalRead(btn->pin) == LOW;
   }
 
   // If the switch changed, due to noise or pressing:
