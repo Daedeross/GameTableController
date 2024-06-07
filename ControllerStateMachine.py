@@ -19,9 +19,9 @@ class ControllerStateMachine(StateMachine):
     running = State()
 
     # Transitions
-    scan = initialize.to(scanning)
+    # scan = initialize.to(scanning)
     connect = scanning.to(connecting)
-    scan = initialize.to(scanning) | connecting.to(scanning)
+    scan = initialize.to(scanning) | connecting.to(scanning) | calibrating.to(scanning) | running.to(scanning)
     calibrate = connecting.to(calibrating) | running.to(calibrating)
     loop = calibrating.to(running) | running.to.itself(internal = True)
 

@@ -2,6 +2,7 @@ from time import sleep
 from BluetoothService import BluetoothService
 from Enums import BleEvent
 from picamera2.picamera2 import Picamera2
+from libcamera import controls
 import cv2
 import numpy as np
 from perpective_transform import four_point_transform as get_transform
@@ -72,7 +73,9 @@ class VisionService:
         self._detector = cv2.SimpleBlobDetector_create(self._blob_params)
         cv2.startWindowThread()
         self._camera.start_preview()
-        self._camera.configure(self._camera.create_video_configuration(main={"format": 'XRGB8888', "size": size}))#, transform=libcamera.Transform(hflip=1, vflip=0)))
+        self._camera.configure(self._camera.create_video_configuration(main={"format": 'XRGB8888', "size": size},
+                                                                       controls={"AeExposureMode": controls.AeExposureModeEnum.Short}))
+                                                                      #, transform=libcamera.Transform(hflip=1, vflip=0)))
         self._camera.start()
     
     def in_bounds(self, x, y):

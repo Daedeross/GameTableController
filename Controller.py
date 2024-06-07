@@ -1,11 +1,12 @@
 from enum import Enum
-from BluetoothService import BluetoothService, BleDisconnectException
+from BluetoothService import BluetoothService
 from Enums import BleEvent, BleBtnState
 from HidService import HidService
 from VisionServcie import VisionService
 from HidState import HidState
 from ControllerStateMachine import ControllerStateMachine
 
+from _bleio.exceptions import BluetoothError
 from picamera2.picamera2 import *
 import cv2
 import numpy as np
@@ -131,6 +132,7 @@ class Controller:
         #     self._loop()
 
     def on_scanning(self):
+        print("Scanning")
         self._bluetooth.ensure_ready()
         self._state_machine.connect()
 
@@ -146,8 +148,10 @@ class Controller:
             self._bluetooth.send_text("Calibrating...")
             self._vision.uart_callibrate(self._bluetooth)
             self._state_machine.loop()
-        except BleDisconnectException:
+        except BluetoothError:
+            print("BluetoothError: now rescanning")
             self._state_machine.scan()
+            return
 
     def on_running(self):
         next = None
@@ -157,7 +161,8 @@ class Controller:
                 next = self._loop()
 
             self._state_machine.send(next)
-        except BleDisconnectException:
+        except BluetoothError:
+            print("BluetoothError: now rescanning")
             self._state_machine.scan()
 
 if __name__ == '__main__':

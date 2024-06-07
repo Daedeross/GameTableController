@@ -3,6 +3,7 @@ from enum import IntFlag
 import time
 from tkinter import N
 
+from _bleio.exceptions import BluetoothError
 from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 from adafruit_ble.services.nordic import UARTService
@@ -13,9 +14,6 @@ ETX = chr(0x03)
 def NoOp():
     pass
 
-class BleDisconnectException(Exception):
-    pass
-
 class BluetoothService:
     _MAX_RETRIES = 10
 
@@ -23,7 +21,7 @@ class BluetoothService:
         self._radio = radio or BLERadio()
         self._packet_size = packet_size
         self._packet_callback = NoOp
-        self._disconnect_callback = NoOp
+        self._disconnect_callback = None
 
     def _get_uart_connection(self, name = None):
         self._connection = None
@@ -50,10 +48,7 @@ class BluetoothService:
         self._radio.stop_scan()
 
     def set_disconnect_callback(self, callback):
-        if callable == None:
-            self._on_disconnect = NoOp
-        else:
-            self._on_disconnect = callback
+        self._on_disconnect = callback
 
     def set_callback(self, packet_size: int, callback):
         if packet_size != None and packet_size < 1:
@@ -77,7 +72,7 @@ class BluetoothService:
             self._get_uart_connection()
 
     def read_uart(self):
-        if self.connected():
+        if self._connection.connected:
             while self._uart.in_waiting >= self._packet_size:
                 buf = self._uart.read(self._packet_size)
                 print("UART in")
@@ -87,16 +82,19 @@ class BluetoothService:
             if (self._disconnect_callback):
                 self._disconnect_callback()
             else:
-                raise BleDisconnectException()
+                raise BluetoothError()
 
     def write_uart(self, bytes: bytearray):
-        if self.connected():
-            self._uart.write(bytes)
-        else:
-            if (self._disconnect_callback):
-                self._disconnect_callback()
+        try:
+            if self._connection.connected:
+                self._uart.write(bytes)
             else:
-                raise BleDisconnectException()
+                if (self._disconnect_callback):
+                    self._disconnect_callback()
+                else:
+                    raise BluetoothError()
+        except:
+            raise BluetoothError()
 
     def send_text(self, text: str):
         buf =  (STX + text + ETX).encode("utf-8")
