@@ -1,5 +1,6 @@
 from time import sleep
 from BluetoothService import BluetoothService
+from CameraService import CameraService
 from Enums import BleEvent
 from picamera2.picamera2 import Picamera2
 from libcamera import controls
@@ -57,13 +58,11 @@ class VisionService:
     _matrix = np.identity(3)
     _inv_matrix = _matrix
 
-    def __init__(self, version = 1, blob_params: cv2.SimpleBlobDetector_Params = None, camera: Picamera2 = None, size = (800, 600)):
-        self.size = size
+    def __init__(self, version = 1, blob_params: cv2.SimpleBlobDetector_Params = None, camera: CameraService = CameraService()):
         self.version = version
-        if camera:
-            self._camera = camera
-        else:
-            self._camera = Picamera2()
+        self.size = camera.size
+        self._camera = camera
+        self._camera.start()
         
         if blob_params:
             self._blob_params = blob_params
@@ -71,19 +70,13 @@ class VisionService:
             self._blob_params = default_blob_params()
 
         self._detector = cv2.SimpleBlobDetector_create(self._blob_params)
-        cv2.startWindowThread()
-        self._camera.start_preview()
-        self._camera.configure(self._camera.create_video_configuration(main={"format": 'XRGB8888', "size": size},
-                                                                       controls={"AeExposureMode": controls.AeExposureModeEnum.Short}))
-                                                                      #, transform=libcamera.Transform(hflip=1, vflip=0)))
-        self._camera.start()
     
     def in_bounds(self, x, y):
         return x >= 0 and y <= self.size[0] and y >= 0 and y <= self.size[1]
 
     def get_keypoints(self, image = None) -> list[tuple[int]]:
         if image is None:
-            im = self._camera.capture_array()
+            im = self._camera.frame
         else:
             im = image
         gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
@@ -104,7 +97,7 @@ class VisionService:
     def callibrate(self, points: set[tuple[int]]):
             
         p_list = [p for p in points]
-        image: cv2.Mat = self._camera.capture_array()
+        image: cv2.Mat = self._camera.frame
         for p in p_list:
             image = cv2.circle(image, p, radius=4, color=(0, 0, 255), thickness=2)
 
@@ -130,7 +123,7 @@ class VisionService:
         cv2.namedWindow("Calibrate")
         cv2.setMouseCallback("Calibrate", capture_click(points))
         while len(points) < 4:
-            image = self._camera.capture_array()
+            image = self._camera.frame
             for p in points:
                 image = cv2.circle(image, p, radius=4, color=(0, 0, 255), thickness=2)
 
@@ -173,7 +166,7 @@ class VisionService:
         # Loop until user inputs 4 points
         while len(points) < 4:
             ble.read_uart()
-            image = self._camera.capture_array()
+            image = self._camera.frame
             for p in points:
                 image = cv2.circle(image, p, radius=4, color=(0, 0, 255), thickness=2)
 

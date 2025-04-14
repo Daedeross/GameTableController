@@ -3,6 +3,8 @@ from enum import IntFlag
 from Enums import ModifierKey
 from HidState import HidState
 
+def clamp(n, smallest, largest): return max(smallest, min(n, largest))
+
 class HidService:
     # file path for reports
     _path = '/dev/hidg0'
@@ -49,6 +51,8 @@ class HidService:
             states = states | self._b_eraser
         if(invert):
             states = states | self._b_invert
+        x = clamp(x, 0, self.max_x)
+        y = clamp(y, 0, self.max_y)
         output = bytearray(10)
         output[0] = self._pen_report_id
         output[1:2] = states.to_bytes(1, byteorder='little')

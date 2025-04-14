@@ -30,8 +30,8 @@ class Controller:
         self._vision = vision
         self._hid = hid
         self._hid_state = HidState()
-        self.flip_x = False
-        self.flip_y = True
+        self.flip_x = True
+        self.flip_y = False
         self._bluetooth.set_callback(1 if version == 1 else 2, self._handle_packet)
         self._state_machine = self.__wire_state_machine()
         self.__version = version
@@ -166,6 +166,6 @@ class Controller:
             self._state_machine.scan()
 
 if __name__ == '__main__':
-    controller = Controller(Mode.PEN, BluetoothService(), VisionService(version = 2, size = (800, 600)), HidService(), version = 2)
+    controller = Controller(Mode.PEN, BluetoothService(), VisionService(version = 2), HidService(), version = 2)
     # controller._vision._show_points = True
     controller.run()
