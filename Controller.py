@@ -66,6 +66,7 @@ class Controller:
         if self.__version == 1:
             self._toggle_buttons(bytes[0])
         elif self.__version == 2:
+            print("{:08b}|{:08b}".format(bytes[0], bytes[1]))
             self._hid_state.wheel_delta = int.from_bytes(bytes[0:1], byteorder='little', signed=True)
             self._hid_state.apply_buttons(bytes[1])
 
